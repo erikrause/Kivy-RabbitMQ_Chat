@@ -10,7 +10,7 @@ class ChatApp(App):
         fl.add_widget(Button(text = "Отправить",
                              font_size = 23,
                              size_hint = (0.25, 0.25),
-                             pos_hint = {'x':0.75, 'y':0.75}))
+                             pos_hint = {'x':0.725, 'y':0.025}))
         return fl
 
 if __name__ == "__main__":
