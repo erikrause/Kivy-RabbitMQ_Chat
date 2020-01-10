@@ -180,7 +180,7 @@ class ChatApp(App):
 
         if nick != self.nick:
             if word == "who_are_here?":
-                send_msg("@i_am_here!")
+                self.send_msg("@i_am_here!")
 
 
     def send_msg(self, text):
