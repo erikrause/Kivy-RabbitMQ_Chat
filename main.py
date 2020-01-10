@@ -98,8 +98,10 @@ Builder.load_string("""
                 on_text_validate: app.send_msg()
             
             ScrollView:
+                id: view
                 size_hint: (0.95, 0.775)
                 pos_hint: {'x':0.025, 'y':0.20}
+                scroll_y: 1
 
                 ChatLabel:
                     id: chat_logs
@@ -136,11 +138,6 @@ class ChatApp(App):
 #############################
 # RABBITMQ:
 
-    def esc_markup(self, msg):    #??????
-        return (msg.replace('&', '&amp;')
-                .replace('[', '&bl;')
-                .replace(']', '&br;'))
-
     def open_channel(self, nickname):
         connection = pika.BlockingConnection(
         pika.ConnectionParameters(host='localhost',
@@ -158,11 +155,18 @@ class ChatApp(App):
             self.channel.basic_consume(queue=self.nick, on_message_callback=self.recieve_msg)
             self.channel.start_consuming()
 
+    def esc_markup(self, msg):
+        return (msg.replace('&', '&amp;')
+                   .replace('[', '&bl;')
+                   .replace(']', '&br;'))
+
+
     def recieve_msg(self, ch, method, properties, body):
 
             self.root.ids.chat_logs.text += (
-            '[b][color=2980b9] {}[/color][/b]\n'.format(body.decode('utf-8'))
+            '[b][color=2980b9] {}[/color][/b]\n'.format(self.esc_markup(body.decode('utf-8')))
             )
+            self.root.ids.view.scroll_y = 0
 
     def send_msg(self):
         text = self.root.ids.message.text
