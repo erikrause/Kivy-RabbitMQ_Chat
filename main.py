@@ -88,14 +88,14 @@ Builder.load_string("""
                 font_size: 20
                 size_hint: (0.15, 0.10)
                 pos_hint: {'x' : 0.825, 'y' : 0.05}
-                on_press: app.send_msg()
+                on_press: app.send_msg(message.text)
 
             TextInput:
                 id: message
                 hint_text: "Введите сообщение"
                 size_hint: (0.775, 0.15)
                 pos_hint: {'x' : 0.025, 'y' : 0.025}
-                on_text_validate: app.send_msg()
+                on_text_validate: app.send_msg(self.text)
             
             ScrollView:
                 id: view
@@ -135,8 +135,6 @@ class ChatApp(App):
 
     def send_msg(self):
         pass
-#############################
-# RABBITMQ:
 
     def open_channel(self, nickname):
         connection = pika.BlockingConnection(
@@ -163,13 +161,30 @@ class ChatApp(App):
 
     def recieve_msg(self, ch, method, properties, body):
 
-            self.root.ids.chat_logs.text += (
-            '[b][color=2980b9] {}[/color][/b]\n'.format(self.esc_markup(body.decode('utf-8')))
-            )
-            self.root.ids.view.scroll_y = 0
+        msg = body.decode('utf-8')
 
-    def send_msg(self):
-        text = self.root.ids.message.text
+        recieve_nick = msg.split(" ")[1].replace(":", "")
+        first_word = msg.split(" ")[2]
+
+        if "@" in first_word:
+            self.parse(first_word, recieve_nick)
+
+        self.root.ids.chat_logs.text += (
+                '[b][color=2980b9] {}[/color][/b]\n'.format(self.esc_markup(msg))
+        )
+        self.root.ids.view.scroll_y = 0
+
+    def parse(self, word, nick):
+
+        word = word.replace("@", "")
+
+        if nick != self.nick:
+            if word == "who_are_here?":
+                send_msg("@i_am_here!")
+
+
+    def send_msg(self, text):
+        #text = self.root.ids.message.text
         message = datetime.datetime.fromtimestamp(time.time()).strftime('%H:%M:%S')+" "+self.nick+": "+text
             
         self.channel.basic_publish(exchange='amq.fanout',
