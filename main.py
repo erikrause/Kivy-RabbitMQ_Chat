@@ -7,7 +7,6 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
 from kivy.core.window import Window
-from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager
 
 import sys
@@ -17,97 +16,6 @@ import datetime
 import time
 import threading
 import msvcrt
-
-Builder.load_string("""
-#:import C kivy.utils.get_color_from_hex
-<ChatLabel@Label>:
-    color: C('#101010')
-    text_size: (self.width, None)
-    halign: 'left'
-    valign: 'top'
-    padding: (0, 0)  # fixed in Kivy 1.8.1
-    size_hint: (1, None)
-    height: self.texture_size[1]
-    markup: True
-
-<ScrollView>:
-    canvas.before:
-        Color:
-            rgb: 1, 1, 1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-
-<RootWidget>:
-    Screen:
-        name: 'login'
-
-        BoxLayout:
-            orientation: 'vertical'
-
-            GridLayout:
-                rows: 2
-                cols: 2
-                spacing: 10
-                row_default_height: 90
-                row_force_default: True
-
-                Label:
-                    text: 'Server:'
-                    halign: 'left'
-                    size_hint: (0.4, 1)
-
-                TextInput:
-                    id: server
-                    text: app.host
-
-                Label:
-                    text: 'Nickname:'
-                    halign: 'left'
-                    size_hint: (0.4, 1)
-
-                TextInput:
-                    id: nickname
-                    text: app.nick
-            
-            Button:
-                font_size: 30
-                height: 90
-                size_hint: (1, None)
-
-                text: 'Connect'
-                on_press: app.connect()
-
-
-    Screen:
-        name: 'chatroom'
-
-        FloatLayout:
-            Button:
-                text: 'Отправить'
-                font_size: 20
-                size_hint: (0.15, 0.10)
-                pos_hint: {'x' : 0.825, 'y' : 0.05}
-                on_press: app.send_msg(message.text)
-
-            TextInput:
-                id: message
-                hint_text: "Введите сообщение"
-                size_hint: (0.775, 0.15)
-                pos_hint: {'x' : 0.025, 'y' : 0.025}
-                on_text_validate: app.send_msg(self.text)
-            
-            ScrollView:
-                id: view
-                size_hint: (0.95, 0.775)
-                pos_hint: {'x':0.025, 'y':0.20}
-                scroll_y: 1
-
-                ChatLabel:
-                    id: chat_logs
-                    text: ''
-                    background_color: [1,1,1,1]
-""")
 
 class RootWidget(ScreenManager):
     def __init__(self, **kwargs):
