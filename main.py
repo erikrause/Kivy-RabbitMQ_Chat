@@ -71,7 +71,7 @@ class ChatApp(App):
 
         # Private service chat:
         channel.queue_bind(exchange='amq.direct',
-                           routing_key=self.nick + '_pivate_service',
+                           routing_key=self.nick + '_private_service',
                            queue=nickname)
 
         return channel
@@ -92,50 +92,41 @@ class ChatApp(App):
         data = json.loads(body.decode('utf-8'))
 
         msg = data['msg']
-        #msg = body.decode('utf-8')
-        #############
-        # TO DELETE:
-        #recieve_nick = msg.split(" ")[1].replace(":", "")
-        #first_word = msg.split(" ")[2]
 
-        #if "@" in first_word:
-        #    self.parse_service(first_word, recieve_nick)
-            
-        ####################
         color = '2980b9'
-
-        #msg_datetime = msg.split(" ")[0]
-        #sender_nick = msg.split(" ")[1].replace(':', '')
-        #first_word = msg.split(" ")[2].replace("@","")
 
         msg_datetime = data['datetime']
         sender_nick = data['nick']
         first_word = msg.split(" ")[0].replace("@","")
 
-        is_service_msg = False
+        msg_age = time.time() - msg_datetime
+        if msg_age > 86400:    
+            ch.basic_ack(delivery_tag = method.delivery_tag)    # Если сообщению больше суток, то удалить из очереди
+        else:
+            is_service_msg = False
         
-        if method.routing_key == 'service':
-            color = 'ff0000'
-            is_service_msg = True
-        if method.routing_key.find('_private') != -1:
-            color = 'ff00ff'
-        if method.routing_key == self.nick + '_service':
-            color = 'faaa00'
-            is_service_msg = True
+            if method.routing_key == 'service':
+                color = 'ff0000'
+                is_service_msg = True
+            elif method.routing_key.find('_private_service') != -1:
+                color = 'faaa00'
+                is_service_msg = True
+            elif method.routing_key.find('_private') != -1:
+                color = 'ff00ff'
 
-        self.root.ids.chat_logs.text += (
-                '{} {}[b][color={}] {}[/color][/b]\n'.format(self.esc_markup(datetime.utcfromtimestamp(msg_datetime).strftime('[%Y.%m.%d_%H:%M:%S]')),
-                                                             sender_nick,
-                                                             color, 
-                                                             self.esc_markup(msg))
-        )
-        self.root.ids.view.scroll_y = 0
+            self.root.ids.chat_logs.text += (
+                    '{} {}[b][color={}] {}[/color][/b]\n'.format(self.esc_markup(datetime.utcfromtimestamp(msg_datetime).strftime('[%Y.%m.%d_%H:%M:%S]')),
+                                                                 sender_nick,
+                                                                 color, 
+                                                                 self.esc_markup(msg))
+            )
+            self.root.ids.view.scroll_y = 0
 
-        if first_word == "who_are_here?":
-            self.send_msg("@i_am_here! @" + sender_nick)
+            if first_word == "who_are_here?":
+                self.send_msg("@i_am_here! @" + sender_nick)
 
-        if is_service_msg:
-            ch.basic_ack(delivery_tag = method.delivery_tag)    # Удалить сообщение из очереди если оно сервисное
+            if is_service_msg:
+                ch.basic_ack(delivery_tag = method.delivery_tag)    # Удалить сообщение из очереди если оно сервисное
 
     # Returns word and true if msg == service command
     def parse_command(self, word):
@@ -165,13 +156,9 @@ class ChatApp(App):
                 routing_key = 'service'
                 if len(words) > 1:
                     if "@" in words[1]:     # Если сервис адресован кому-то:
-                        routing_key = words[1].replace('@','') + '_pivate_service'
+                        routing_key = words[1].replace('@','') + '_private_service'
             else:
                 routing_key = words[0].replace("@", "") + "_private"   # routing_key = nickname address
-            
-
-
-        message = datetime.datetime.fromtimestamp(time.time()).strftime('%Y.%m.%d_%H:%M:%S')+" "+self.nick+": "+text
 
         message = {'datetime': time.time(), 'nick':self.nick, 'msg':text}
 
@@ -185,7 +172,8 @@ class ChatApp(App):
 	                          ))
 
         # Плохой код, поменять routing:
-        if routing_key.find("_private") != -1:
+        if routing_key.find("_private") != -1 and \
+             routing_key.find("_private_service") == -1:
             self.channel.basic_publish(exchange=exchange,
                                        routing_key=self.nick + "_private",
 	                                   body=message,
