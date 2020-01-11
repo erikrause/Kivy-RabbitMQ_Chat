@@ -44,6 +44,8 @@ class ChatApp(App):
         conuming_thread = threading.Thread(target=self.consuming, name='consuming')
         conuming_thread.start()
 
+        self.send_msg('@зашел_в_чат')
+
     def send_msg(self):
         pass
 
@@ -151,7 +153,8 @@ class ChatApp(App):
             exchange = 'amq.direct'
 
             if words[0] == "@who_are_here?" or \
-               words[0] == "@i_am_here!":
+               words[0] == "@i_am_here!" or \
+               words[0] == '@зашел_в_чат':
 
                 routing_key = 'service'
                 if len(words) > 1:
