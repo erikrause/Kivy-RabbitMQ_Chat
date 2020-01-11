@@ -74,6 +74,7 @@
                 hint_text: "¬ведите сообщение"
                 size_hint: (0.775, 0.15)
                 pos_hint: {'x' : 0.025, 'y' : 0.025}
+				multiline: False
                 on_text_validate: app.send_msg(self.text)
             
             ScrollView:

@@ -44,6 +44,7 @@ class ChatApp(App):
         conuming_thread = threading.Thread(target=self.consuming, name='consuming')
         conuming_thread.start()
 
+        time.sleep(0.5)      # ?Без паузы возникает ошибка pop from an empty deque. нужна проверка потока consuming
         self.send_msg('@зашел_в_чат')
 
     def send_msg(self):
