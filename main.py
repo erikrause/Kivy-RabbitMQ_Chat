@@ -18,6 +18,7 @@ import threading
 import msvcrt
 
 import json
+from datetime import datetime
 
 class RootWidget(ScreenManager):
     def __init__(self, **kwargs):
@@ -123,7 +124,10 @@ class ChatApp(App):
             is_service_msg = True
 
         self.root.ids.chat_logs.text += (
-                '[b][color={}] {}[/color][/b]\n'.format(color, self.esc_markup(msg))
+                '{} {}[b][color={}] {}[/color][/b]\n'.format(self.esc_markup(datetime.utcfromtimestamp(msg_datetime).strftime('[%Y.%m.%d_%H:%M:%S]')),
+                                                             sender_nick,
+                                                             color, 
+                                                             self.esc_markup(msg))
         )
         self.root.ids.view.scroll_y = 0
 
