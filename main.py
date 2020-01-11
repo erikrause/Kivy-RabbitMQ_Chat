@@ -17,6 +17,8 @@ import time
 import threading
 import msvcrt
 
+import json
+
 class RootWidget(ScreenManager):
     def __init__(self, **kwargs):
         super(RootWidget, self).__init__(**kwargs)
@@ -58,7 +60,7 @@ class ChatApp(App):
 
         # Private chat:
         channel.queue_bind(exchange='amq.direct',
-                           routing_key=self.nick,
+                           routing_key=self.nick + "_private",
                            queue=nickname)
         
         # Service chat:
@@ -68,7 +70,7 @@ class ChatApp(App):
 
         # Private service chat:
         channel.queue_bind(exchange='amq.direct',
-                           routing_key=self.nick + '_service',
+                           routing_key=self.nick + '_pivate_service',
                            queue=nickname)
 
         return channel
@@ -86,7 +88,10 @@ class ChatApp(App):
 
     def recieve_msg(self, ch, method, properties, body):
 
-        msg = body.decode('utf-8')
+        data = json.loads(body.decode('utf-8'))
+
+        msg = data['msg']
+        #msg = body.decode('utf-8')
         #############
         # TO DELETE:
         #recieve_nick = msg.split(" ")[1].replace(":", "")
@@ -98,16 +103,20 @@ class ChatApp(App):
         ####################
         color = '2980b9'
 
-        msg_datetime = msg.split(" ")[0]
-        sender_nick = msg.split(" ")[1].replace(':', '')
-        first_word = msg.split(" ")[2].replace("@","")
+        #msg_datetime = msg.split(" ")[0]
+        #sender_nick = msg.split(" ")[1].replace(':', '')
+        #first_word = msg.split(" ")[2].replace("@","")
+
+        msg_datetime = data['datetime']
+        sender_nick = data['nick']
+        first_word = msg.split(" ")[0].replace("@","")
 
         is_service_msg = False
         
         if method.routing_key == 'service':
             color = 'ff0000'
             is_service_msg = True
-        if method.routing_key == self.nick:
+        if method.routing_key.find('_private') != -1:
             color = 'ff00ff'
         if method.routing_key == self.nick + '_service':
             color = 'faaa00'
@@ -152,14 +161,17 @@ class ChatApp(App):
                 routing_key = 'service'
                 if len(words) > 1:
                     if "@" in words[1]:     # Если сервис адресован кому-то:
-                        routing_key = words[1].replace('@','') + '_service'
+                        routing_key = words[1].replace('@','') + '_pivate_service'
             else:
-                routing_key = words[0].replace("@", "")   # routing_key = nickname address
+                routing_key = words[0].replace("@", "") + "_private"   # routing_key = nickname address
             
 
 
         message = datetime.datetime.fromtimestamp(time.time()).strftime('%Y.%m.%d_%H:%M:%S')+" "+self.nick+": "+text
 
+        message = {'datetime': time.time(), 'nick':self.nick, 'msg':text}
+
+        message = json.dumps(message)
             
         self.channel.basic_publish(exchange=exchange,
 	                          routing_key=routing_key,
@@ -167,6 +179,16 @@ class ChatApp(App):
 	                          properties=pika.BasicProperties(
 	                          delivery_mode=2,  # make message persistent
 	                          ))
+
+        # Плохой код, поменять routing:
+        if routing_key.find("_private") != -1:
+            self.channel.basic_publish(exchange=exchange,
+                                       routing_key=self.nick + "_private",
+	                                   body=message,
+	                                   properties=pika.BasicProperties(
+	                                   delivery_mode=2,  # make message persistent
+	                                   ))
+
 
 if __name__ == "__main__":
     ChatApp().run();
